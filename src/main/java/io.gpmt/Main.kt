@@ -10,6 +10,7 @@ import org.web3j.protocol.core.Request
 import org.web3j.protocol.core.Response
 import org.web3j.protocol.http.HttpService
 import rx.schedulers.Schedulers.computation
+import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.concurrent.thread
 
@@ -88,7 +89,7 @@ data class Json(
         val id: String?,
         val method: String?
 ) {
-    val identifier: String get() = if (id != null) id else method!!
+    val identifier: String get() = id ?: method!!
 }
 
 data class JsonBlock(
@@ -113,17 +114,17 @@ data class Result(
 )
 
 fun ws() {
-    val request = okhttp3.Request.Builder().url("ws://35.189.68.234:8546").build()
+    val request = okhttp3.Request.Builder().url("ws://35.197.220.176:8546").build()
     val respCount = AtomicLong(0)
     val reqCount = AtomicLong(1)
     var webSocket1: WebSocket? = null
-    var webSockets: MutableList<WebSocket> = mutableListOf()
+    val webSockets: MutableList<WebSocket> = mutableListOf()
     val listener: WebSocketListener = object : WebSocketListener() {
         override fun onMessage(webSocket: WebSocket, text: String) {
             val resp = Gson().fromJson(text, Json::class.java)
             if (resp.identifier == "eth_getBlockByNumber") {
                 val resp2 = Gson().fromJson(text, JsonBlock::class.java)
-                resp2.result.transactions.take(40).forEachIndexed { i, tx ->
+                resp2.result.transactions.forEachIndexed { i, tx ->
                     reqCount.addAndGet(1)
                     webSockets[i % webSockets.size].getTrace(tx)
                 }
